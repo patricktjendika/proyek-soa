@@ -12,6 +12,19 @@ app.use("/review", review);
 app.use("/bookmark", bookmark);
 app.use("/user",user);
 
+
+app.get('/showDummies', (req, res) => {
+    var arrObj =[{
+        Nama: "Budi",
+        Umur: "20 Tahun"
+    },{
+        Nama: "Patrick",
+        Umur: "21 Tahun"
+    }
+    ];
+    res.send(arrObj);
+});
+
 app.listen(3000, () => {
     console.log("Listening on port 3000...");
 });
