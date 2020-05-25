@@ -12,6 +12,17 @@ app.use("/review", review);
 app.use("/bookmark", bookmark);
 app.use("/user",user);
 
-app.listen(3000, () => {
-    console.log("Listening on port 3000...");
+
+app.get('/showDummies', (req, res) => {
+    var arrObj =[{
+        Nama: "Budi",
+        Umur: "20 Tahun"
+    },{
+        Nama: "Patrick",
+        Umur: "21 Tahun"
+    }
+    ];
+    res.send(arrObj);
 });
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log('Listening on port '+port+'...'));
