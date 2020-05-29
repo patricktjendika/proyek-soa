@@ -16,5 +16,17 @@ app.use("/user",user);
 app.use("/playlist", playlist);
 app.use("/search",book);
 
+app.get('/showDummies', (req, res) => {
+    var arrObj =[{
+        Nama: "Budi",
+        Umur: "20 Tahun"
+    },{
+        Nama: "Patrick",
+        Umur: "21 Tahun"
+    }
+    ];
+    res.send(arrObj);
+});
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log('Listening on port '+port+'...'));
