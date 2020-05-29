@@ -82,7 +82,8 @@ router.post("/register",async(req,res)=>{
                     conn.release();
                     res.status(400).send("Username sudah terpakai");
                 }else{
-                    const insert = await executeQuery(conn, `insert into user values('${username}','${password}','${name}','${phone_number}',0,'${filename}')`);
+                    const insert = await executeQuery(conn, `insert into user values('${username}','${password}','${name}','${phone_number}',0,'${filename}', 0)`);
+                    const insertBookshelf = await executeQuery(conn, `insert into h_bookshelf values('${username}',0)`);
                     conn.release();
                     res.status(200).send("akun "+ username + " berhasil dibuat");
                 }
@@ -113,7 +114,11 @@ router.post("/login", async(req,res)=>{
                 "profile_picture":check[0].profile_picture
             }   ,"proyek-soa");
             conn.release();
-            res.status(200).send(token);
+            var obj={
+                status:200,
+                token:token
+            };
+            res.status(200).send(obj);
         }else{
             conn.release();
             res.status(400).send("akun tidak ditemukan");
