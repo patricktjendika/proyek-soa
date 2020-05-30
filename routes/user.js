@@ -1,4 +1,4 @@
-const express = require("express"), mysql = require("mysql"), request = require("request"), multer =require('multer'),path = require('path'),jwt = require("jsonwebtoken"),fs = require('fs');
+const express = require("express"), mysql = require("mysql"), request = require("request"), multer =require('multer'),path = require('path'),jwt = require("jsonwebtoken"),fs = require('fs'),midtransClient = require("midtrans-client");
 const config = require("../config");
 
 const router = express.Router();
@@ -9,6 +9,12 @@ router.use(express.static('uploads'));
 var upload = multer({ dest: 'uploads/' })
 
 var filename="";
+
+let core = new midtransClient.CoreApi({
+    isProduction : false,
+    serverKey : 'SB-Mid-server-WnmvehQPB0u7h2fZg40o55dL',
+    clientKey : 'SB-Mid-client-RmyH8bZpPMIuJpRK'
+});
 
 let storage = multer.diskStorage({
     destination: function(req, file, callback) {
@@ -227,10 +233,10 @@ router.delete("/:username", async(req,res)=>{
     res.status(200).send("Berhasil delete akun "+ username);
 });
 
-//upgrade blm selesai
+//upgrade
 router.put("/upgrade", async(req,res)=>{
     const token = req.header("x-auth-token");
-    console.log(token);
+
     let user ={};
     if(!token){
         res.status(401).send("Token not found");
@@ -243,14 +249,153 @@ router.put("/upgrade", async(req,res)=>{
     const conn = await getConnection();
     const check = await executeQuery(conn,`select*from user where username='${user.username}' && password='${user.password}'`);
     if(check.length>0){
-        const update = await executeQuery(conn,`update user set type=1 where username='${user.username}'`)
-        conn.release();
-        res.status(200).send("Upgrade akun " + user.username + " berhasil");
+        if(user.type==0){
+            if(check[0].transaction_id==""){
+                console.log(`- Received charge request for BCA VA`);
+                core.charge({
+                    "payment_type": "bank_transfer",
+                    "transaction_details": {
+                    "gross_amount": 200000,
+                    "order_id": "order-id-node-"+Math.round((new Date()).getTime() / 1000),
+                    },
+                    "bank_transfer":{
+                    "bank":"bca"
+                    },
+                    "customer_details":{
+                        "first_name":user.name,
+                        "phone":user.phone_number
+                    }
+                })
+                .then(async (apiResponse)=>{
+                    const addTrans = await executeQuery(conn,`update user set transaction_id='${apiResponse.transaction_id}' where username='${user.username}'`);
+                    conn.release();
+                    const obj = {
+                        "message":"Silahkan membayar di Virtual Number : "+apiResponse.va_numbers[0].va_number,
+                        "Nama User":user.name,
+                        "transaction_id":apiResponse.transaction_id,
+                        "total_price":apiResponse.currency + " " + apiResponse.gross_amount,
+                        "payment_type":apiResponse.payment_type,
+                        "transaction_time":apiResponse.transaction_time,
+                        "transaction_status":apiResponse.transaction_status,
+                        "va_numbers":apiResponse.va_numbers
+                    }
+                    res.status(200).send(obj);
+                })
+            }else{
+                console.log(`- Received check transaction status request:`,check[0].transaction_id);
+                core.transaction.status(check[0].transaction_id)
+                  .then(async (apiResponse)=>{
+
+                    let transactionStatus = apiResponse.transaction_status;
+
+                    if (transactionStatus == 'capture'){
+                        if (fraudStatus == 'challenge'){
+                            // TODO set transaction status on your databaase to 'challenge'
+                        } else if (fraudStatus == 'accept'){
+                            // TODO set transaction status on your databaase to 'success'
+                            const obj = {
+                                "message":"status pembayaran",
+                                "Nama User":user.name,
+                                "transaction_id":apiResponse.transaction_id,
+                                "total_price":apiResponse.currency + " " + apiResponse.gross_amount,
+                                "payment_type":apiResponse.payment_type,
+                                "transaction_time":apiResponse.transaction_time,
+                                "transaction_status":apiResponse.transaction_status,
+                                "va_numbers":apiResponse.va_numbers
+                            }
+                            const upgradeUser = await executeQuery(conn,`update user set type=1 where username='${user.username}'`);
+                            conn.release();
+                            res.status(200).send(obj);
+                        }
+                    } else if (transactionStatus == 'settlement'){
+                      // TODO set transaction status on your databaase to 'success'
+                      const obj = {
+                        "message":"Pembayaran Berhasil",
+                        "Nama User":user.name,
+                        "transaction_id":apiResponse.transaction_id,
+                        "total_price":apiResponse.currency + " " + apiResponse.gross_amount,
+                        "payment_type":apiResponse.payment_type,
+                        "transaction_time":apiResponse.transaction_time,
+                        "transaction_status":apiResponse.transaction_status,
+                        "va_numbers":apiResponse.va_numbers
+                    }
+                    const upgradeUser = await executeQuery(conn,`update user set type=1 where username='${user.username}'`);
+                    conn.release();
+                    res.status(200).send(obj);
+                    } else if (transactionStatus == 'cancel' ||
+                      transactionStatus == 'deny' ||
+                      transactionStatus == 'expire'){
+                      // TODO set transaction status on your databaase to 'failure'
+                      const obj = {
+                        "message":"Pembayaran Gagal",
+                        "Nama User":user.name,
+                        "transaction_id":apiResponse.transaction_id,
+                        "total_price":apiResponse.currency + " " + apiResponse.gross_amount,
+                        "payment_type":apiResponse.payment_type,
+                        "transaction_time":apiResponse.transaction_time,
+                        "transaction_status":apiResponse.transaction_status,
+                        "va_numbers":apiResponse.va_numbers
+                    }
+                    const removeTrans = await executeQuery(conn,`update user set transaction_id='' where username='${user.username}'`);
+                    conn.release();
+                    res.status(200).send(obj);
+                    } else if (transactionStatus == 'pending'){
+                      // TODO set transaction status on your databaase to 'pending' / waiting payment
+                      const obj = {
+                        "message":"Pembayaran Belum Diterima",
+                        "Nama User":user.name,
+                        "transaction_id":apiResponse.transaction_id,
+                        "total_price":apiResponse.currency + " " + apiResponse.gross_amount,
+                        "payment_type":apiResponse.payment_type,
+                        "transaction_time":apiResponse.transaction_time,
+                        "transaction_status":apiResponse.transaction_status,
+                        "va_numbers":apiResponse.va_numbers
+                    }
+                    conn.release();
+                    res.status(200).send(obj);
+                    }
+                  });
+            }          
+        }else{
+            conn.release();
+            res.status(200).send("Akun "+ user.type + " sudah premium");
+        }
     }else{
         conn.release();
         res.status(400).send("Akun tidak ditemukan");
     }
-    
+});
+
+//notification handler midtrans
+router.post("/cekBayar",async(req,res)=>{
+    let receivedJson = req.body;
+    core.transaction.notification(receivedJson)
+        .then((transactionStatusObject)=>{
+        let transaction_id = transactionStatusObject.transaction_id;
+        let transactionStatus = transactionStatusObject.transaction_status;
+        let fraudStatus = transactionStatusObject.fraud_status;
+
+        if (transactionStatus == 'capture'){
+            if (fraudStatus == 'challenge'){
+                // TODO set transaction status on your databaase to 'challenge'
+            } else if (fraudStatus == 'accept'){
+                // TODO set transaction status on your databaase to 'success'
+                const conn = await getConnection();
+                const upgradeUser = await executeQuery(conn,`update user set type=1 where transaction_id='${transaction_id}'`);
+                conn.release();
+                console.log("upgrade user");
+                res.status(200).send("upgrade user berhasil");
+            }
+        } else if (transactionStatus == 'settlement'){
+            // TODO set transaction status on your databaase to 'success'
+            const conn = await getConnection();
+            const upgradeUser = await executeQuery(conn,`update user set type=1 where transaction_id='${transaction_id}'`);
+            conn.release();
+            console.log("upgrade user");
+            res.status(200).send("upgrade user berhasil");
+        }
+        res.status(400).send("tidak terjadi upgrade");
+        });
 });
 
 //get user by keyword
