@@ -1,5 +1,6 @@
-const express = require("express"), mysql = require("mysql"), request = require("request"), multer =require('multer'),path = require('path'),jwt = require("jsonwebtoken"),fs = require('fs'),midtransClient = require("midtrans-client");
+const express = require("express"), mysql = require("mysql"), request = require("request"), multer =require('multer'),path = require('path'),jwt = require("jsonwebtoken"),fs = require('fs');
 const config = require("../config");
+const midtransClient = require("midtrans-client");
 
 const router = express.Router();
 const pool = mysql.createPool(config.database);
@@ -10,11 +11,11 @@ var upload = multer({ dest: 'uploads/' })
 
 var filename="";
 
-// let core = new midtransClient.CoreApi({
-//     isProduction : false,
-//     serverKey : 'SB-Mid-server-WnmvehQPB0u7h2fZg40o55dL',
-//     clientKey : 'SB-Mid-client-RmyH8bZpPMIuJpRK'
-// });
+let core = new midtransClient.CoreApi({
+    isProduction : false,
+    serverKey : 'SB-Mid-server-WnmvehQPB0u7h2fZg40o55dL',
+    clientKey : 'SB-Mid-client-RmyH8bZpPMIuJpRK'
+});
 
 let storage = multer.diskStorage({
     destination: function(req, file, callback) {
@@ -370,7 +371,7 @@ router.put("/upgrade", async(req,res)=>{
 router.post("/cekBayar",async(req,res)=>{
     let receivedJson = req.body;
     core.transaction.notification(receivedJson)
-        .then((transactionStatusObject)=>{
+        .then(async (transactionStatusObject)=>{
         let transaction_id = transactionStatusObject.transaction_id;
         let transactionStatus = transactionStatusObject.transaction_status;
         let fraudStatus = transactionStatusObject.fraud_status;
