@@ -10,11 +10,11 @@ var upload = multer({ dest: 'uploads/' })
 
 var filename="";
 
-let core = new midtransClient.CoreApi({
-    isProduction : true,
-    serverKey : 'SB-Mid-server-WnmvehQPB0u7h2fZg40o55dL',
-    clientKey : 'SB-Mid-client-RmyH8bZpPMIuJpRK'
-});
+// let core = new midtransClient.CoreApi({
+//     isProduction : false,
+//     serverKey : 'SB-Mid-server-WnmvehQPB0u7h2fZg40o55dL',
+//     clientKey : 'SB-Mid-client-RmyH8bZpPMIuJpRK'
+// });
 
 let storage = multer.diskStorage({
     destination: function(req, file, callback) {
