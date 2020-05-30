@@ -11,7 +11,7 @@ var upload = multer({ dest: 'uploads/' })
 var filename="";
 
 let core = new midtransClient.CoreApi({
-    isProduction : false,
+    isProduction : true,
     serverKey : 'SB-Mid-server-WnmvehQPB0u7h2fZg40o55dL',
     clientKey : 'SB-Mid-client-RmyH8bZpPMIuJpRK'
 });
