@@ -13,8 +13,8 @@ var filename="";
 
 let core = new midtransClient.CoreApi({
     isProduction : false,
-    serverKey : 'SB-Mid-server-WnmvehQPB0u7h2fZg40o55dL',
-    clientKey : 'SB-Mid-client-RmyH8bZpPMIuJpRK'
+    serverKey : process.env.SERVERKEY,
+    clientKey : process.env.CLIENTKEY
 });
 
 let storage = multer.diskStorage({
