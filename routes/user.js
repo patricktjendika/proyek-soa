@@ -225,11 +225,13 @@ router.delete("/:username", async(req,res)=>{
         res.status(404).send("Username Tidak Sesuai Dengan Token");
     }
     const conn = await getConnection();
-    const check = await executeQuery(conn,`select*from user where username='${username}' && password='${user.password}'`);
+    const check = await executeQuery(conn,`select*from user where username='${username}' && password='${user.password}' && status=1`);
     if(check.length==0){
+        conn.release();
         res.status(400).send("Akun tidak ditemukan");
     }else{
         const deleteUser = await executeQuery(conn,`update user set status=0 where username='${username}' && password='${user.password}'`);
+        conn.release();
         res.status(200).send("Berhasil delete akun "+ username);
     }
     res.status(404).send("Tidak terjadi apa apa");
