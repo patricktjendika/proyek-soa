@@ -135,6 +135,11 @@ router.post("/login", async(req,res)=>{
 
 //update informasi user
 router.put("/updateUser/:username", async(req,res)=>{
+    
+    if(!req.params){
+        res.status(400).send("Username Kosong");
+    }
+
     var username = req.params.username;
     const token = req.header("x-auth-token");
 
@@ -149,9 +154,6 @@ router.put("/updateUser/:username", async(req,res)=>{
         }
     }).single('profile_picture');
 
-    if(!username){
-        res.status(400).send("Username Kosong");
-    } 
     let user ={};
     if(!token){
         res.status(401).send("Token not found");
@@ -206,12 +208,14 @@ router.put("/updateUser/:username", async(req,res)=>{
 
 //delete user
 router.delete("/:username", async(req,res)=>{
+
+    if(!req.params){
+        res.status(400).send("Username Kosong");
+    } 
+
     var username = req.params.username;
     const token = req.header("x-auth-token");
 
-    if(!username){
-        res.status(400).send("Username Kosong");
-    } 
     let user ={};
     if(!token){
         res.status(401).send("Token not found");
@@ -411,14 +415,16 @@ router.post("/cekBayar",async(req,res)=>{
 
 //get user by keyword
 router.get("/:keyword",async(req,res)=>{
+
+    if(!req.params){
+        res.status(400).send("Keyword belum diinput");
+    } 
+
     const username = req.params.keyword;
 
     var users=[];
 
-    if(!username){
-        res.status(400).send("Keyword belum diinput");
-    }else{
-        const conn = await getConnection();
+    const conn = await getConnection();
         const search = await executeQuery(conn,`SELECT * FROM user WHERE LOWER(username) LIKE  LOWER('%${username}%') and status=1`);
         if(search.length<=0){
             res.status(404).send("Akun tidak ditemukan");
@@ -440,7 +446,6 @@ router.get("/:keyword",async(req,res)=>{
             }
             res.status(200).send(obj);
         }
-    }
 });
 
 module.exports = router;
