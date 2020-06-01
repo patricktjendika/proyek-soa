@@ -154,17 +154,24 @@ router.get("/:id_buku", async(req,res)=>{
             }else{
                 const conn = await getConnection();
                 const getBookmark = await executeQuery(conn, `select * from bookmark where id_book='${id_buku}' and username='${user.username}'`);
-                var obj = {
-                    status:200,
-                    bookmark: {
-                        id_book: id_buku,
-                        title: book.GoodreadsResponse.book[0].title[0],
-                        author:book.GoodreadsResponse.book[0].authors[0].author[0].name[0],
-                        year:book.GoodreadsResponse.book[0].publication_year[0],
-                        page_number: getBookmark[0].page_number,
-                        note: getBookmark[0].note
-                    }
-                };
+                if(getBookmark.length==0){
+                    var obj = {
+                        status:400,
+                        message: "You have never bookmarked this book"
+                    };
+                }else{
+                    var obj = {
+                        status:200,
+                        bookmark: {
+                            id_book: id_buku,
+                            title: book.GoodreadsResponse.book[0].title[0],
+                            author:book.GoodreadsResponse.book[0].authors[0].author[0].name[0],
+                            year:book.GoodreadsResponse.book[0].publication_year[0],
+                            page_number: getBookmark[0].page_number,
+                            note: getBookmark[0].note
+                        }
+                    };
+                }
                 res.status(200).send(obj);
             }
         }else{
