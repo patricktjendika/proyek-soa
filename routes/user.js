@@ -143,17 +143,6 @@ router.put("/updateUser/:username", async(req,res)=>{
     var username = req.params.username;
     const token = req.header("x-auth-token");
 
-    let upload = multer({
-        storage: storage,
-        fileFilter: function(req, file, callback) {
-            let ext = path.extname(file.originalname)
-            if (ext !== '.png' && ext !== '.jpg' && ext !== '.gif' && ext !== '.jpeg' && ext !== '.PNG' && ext !== '.JPG' && ext !== '.GIF' && ext !== '.JPEG' ) {
-                return callback(res.end('Only images are allowed'), null)
-            }
-            callback(null, true)
-        }
-    }).single('profile_picture');
-
     let user ={};
     if(!token){
         res.status(401).send("Token not found");
@@ -166,6 +155,18 @@ router.put("/updateUser/:username", async(req,res)=>{
     if(user.username!=username){
         res.status(404).send("Username Tidak Sesuai Dengan Token");
     }
+
+    let upload = multer({
+        storage: storage,
+        fileFilter: function(req, file, callback) {
+            let ext = path.extname(file.originalname)
+            if (ext !== '.png' && ext !== '.jpg' && ext !== '.gif' && ext !== '.jpeg' && ext !== '.PNG' && ext !== '.JPG' && ext !== '.GIF' && ext !== '.JPEG' ) {
+                return callback(res.end('Only images are allowed'), null)
+            }
+            callback(null, true)
+        }
+    }).single('profile_picture');
+    
     upload(req, res, async function(err) {
         if(filename==""){
             filename=user.profile_picture;
