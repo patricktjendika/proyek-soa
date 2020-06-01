@@ -1,11 +1,11 @@
-const express = require("express"), mysql = require("mysql"), request = require("request"), multer =require('multer'),path = require('path'),jwt = require("jsonwebtoken"),fs = require('fs');
+const express = require("express"), mysql = require("mysql"), request = require("request"), multer =require('multer'),path = require('path'),jwt = require("jsonwebtoken"),fs = require('fs'),midtransClient = require("midtrans-client"),bodyParser = require('body-parser');
 const config = require("../config");
-const midtransClient = require("midtrans-client");
 
 const router = express.Router();
 const pool = mysql.createPool(config.database);
 
 router.use(express.static('uploads'));
+router.use(bodyParser());
 
 var upload = multer({ dest: 'uploads/' })
 
@@ -89,7 +89,7 @@ router.post("/register",async(req,res)=>{
                     conn.release();
                     res.status(400).send("Username sudah terpakai");
                 }else{
-                    const insert = await executeQuery(conn, `insert into user values('${username}','${password}','${name}','${phone_number}',0,'${filename}','',0)`);
+                    const insert = await executeQuery(conn, `insert into user values('${username}','${password}','${name}','${phone_number}',0,'${filename}', 1)`);
                     const insertBookshelf = await executeQuery(conn, `insert into h_bookshelf values('${username}',0)`);
                     conn.release();
                     res.status(200).send("akun "+ username + " berhasil dibuat");
@@ -110,7 +110,7 @@ router.post("/login", async(req,res)=>{
         res.status(400).send("Password Kosong");
     }else{
         const conn = await getConnection();
-        const check = await executeQuery(conn,`select * from user where username='${username}' and password='${password}'`);
+        const check = await executeQuery(conn,`select * from user where username='${username}' and password='${password}' and status=1`);
         if(check.length>0){
             const token = jwt.sign({    
                 "username":check[0].username,
@@ -229,9 +229,10 @@ router.delete("/:username", async(req,res)=>{
     if(check.length==0){
         res.status(400).send("Akun tidak ditemukan");
     }else{
-        const deleteUser = await executeQuery(conn,`delete from user where username='${username}' && password='${user.password}'`);
+        const deleteUser = await executeQuery(conn,`update user set status=0 where username='${username}' && password='${user.password}'`);
+        res.status(200).send("Berhasil delete akun "+ username);
     }
-    res.status(200).send("Berhasil delete akun "+ username);
+    res.status(404).send("Tidak terjadi apa apa");
 });
 
 //upgrade
@@ -370,8 +371,12 @@ router.put("/upgrade", async(req,res)=>{
 //notification handler midtrans
 router.post("/cekBayar",async(req,res)=>{
     let receivedJson = req.body;
-    core.transaction.notification(receivedJson)
-        .then(async (transactionStatusObject)=>{
+    if(!receivedJson){
+        console.log("tidak terjadi apa apa");
+        res.status(200).send("tidak terjadi apa apa");
+    }else{
+        core.transaction.notification(receivedJson)
+        .then(async(transactionStatusObject)=>{
         let transaction_id = transactionStatusObject.transaction_id;
         let transactionStatus = transactionStatusObject.transaction_status;
         let fraudStatus = transactionStatusObject.fraud_status;
@@ -394,9 +399,12 @@ router.post("/cekBayar",async(req,res)=>{
             conn.release();
             console.log("upgrade user");
             res.status(200).send("upgrade user berhasil");
+        }else{
+            console.log("tidak terjadi apa apa");
+            res.status(200).send("tidak terjadi apa apa");
         }
-        res.status(400).send("tidak terjadi upgrade");
         });
+    }
 });
 
 //get user by keyword
@@ -409,7 +417,7 @@ router.get("/:keyword",async(req,res)=>{
         res.status(400).send("Keyword belum diinput");
     }else{
         const conn = await getConnection();
-        const search = await executeQuery(conn,`SELECT * FROM user WHERE LOWER(username) LIKE  LOWER('%${username}%')`);
+        const search = await executeQuery(conn,`SELECT * FROM user WHERE LOWER(username) LIKE  LOWER('%${username}%') and status=1`);
         if(search.length<=0){
             res.status(404).send("Akun tidak ditemukan");
         }else{
