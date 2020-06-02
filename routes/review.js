@@ -163,21 +163,21 @@ router.get("/", async (req, res) => {
         }
 
         if(c_username==1 && c_rating==0 && c_id_book==0){
-            reviews = await executeQuery(conn, `select * from review where username='${username}'`);
+            reviews = await executeQuery(conn, `select * from review r, user u where r.username='${username}' and u.username=r.username and u.status=1`);
         }else if(c_username==0 && c_rating==1 && c_id_book==0){
-            reviews = await executeQuery(conn, `select * from review where rating=${rating}`);
+            reviews = await executeQuery(conn, `select * from review r, user u where r.rating=${rating} and u.username=r.username and u.status=1`);
         }else if(c_username==0 && c_rating==0 && c_id_book==1){
-            reviews = await executeQuery(conn, `select * from review where id_book=${id_book}`);
+            reviews = await executeQuery(conn, `select * from review r, user u where r.id_book=${id_book} and u.username=r.username and u.status=1`);
         }else if(c_username==1 && c_rating==1 && c_id_book==0){
-            reviews = await executeQuery(conn, `select * from review where rating=${rating} and username='${username}'`);
+            reviews = await executeQuery(conn, `select * from review r, user u where r.rating=${rating} and r.username='${username}' and u.username=r.username and u.status=1`);
         }else if(c_username==1 && c_rating==0 && c_id_book==1){
-            reviews = await executeQuery(conn, `select * from review where username='${username}' and id_book='${id_book}'`);
+            reviews = await executeQuery(conn, `select * from review r, user u where r.username='${username}' and r.id_book='${id_book}' and u.username=r.username and u.status=1`);
         }else if(c_username==0 && c_rating==1 && c_id_book==1){
-            reviews = await executeQuery(conn, `select * from review where rating=${rating} and id_book='${id_book}'`);
+            reviews = await executeQuery(conn, `select * from review r, user u where r.rating=${rating} and r.id_book='${id_book}' and u.username=r.username and u.status=1`);
         }else if(c_username==1 && c_rating==1 && c_id_book==1){
-            reviews = await executeQuery(conn, `select * from review where username='${username}' and rating=${rating} and id_book='${id_book}'`);
+            reviews = await executeQuery(conn, `select * from review r, user u where r.username='${username}' and r.rating=${rating} and r.id_book='${id_book}' and u.username=r.username and u.status=1`);
         }else{
-            reviews = await executeQuery(conn, `select * from review`);
+            reviews = await executeQuery(conn, `select * from review r, user u where u.username=r.username and u.status=1`);
         }
         if(reviews.length>0){
             var arr=[];
