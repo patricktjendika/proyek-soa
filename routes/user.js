@@ -65,35 +65,30 @@ router.post("/register",async(req,res)=>{
     }).single('profile_picture');
 
     upload(req, res, async function(err) {
-        if(filename==""){
-            res.status(400).send("Gambar Tidak Ada");
-        }
-        else{
-            var username = req.body.username;
-            var password = req.body.password;
-            var name = req.body.name;
-            var phone_number = req.body.phone_number;
-    
-            if(!username){
-                res.status(400).send("Username Kosong");
-            }else if(!password){
-                res.status(400).send("Password Kosong");
-            }else if(!name){
-                res.status(400).send("name Kosong");
-            }else if(!phone_number){
-                res.status(400).send("phone number Kosong");
+        var username = req.body.username;
+        var password = req.body.password;
+        var name = req.body.name;
+        var phone_number = req.body.phone_number;
+
+        if(!username){
+            res.status(400).send("Username Kosong");
+        }else if(!password){
+            res.status(400).send("Password Kosong");
+        }else if(!name){
+            res.status(400).send("name Kosong");
+        }else if(!phone_number){
+            res.status(400).send("phone number Kosong");
+        }else{
+            const conn = await getConnection();
+            const check = await executeQuery(conn,`select*from user where username='${username}'`);
+            if(check.length>0){
+                conn.release();
+                res.status(400).send("Username sudah terpakai");
             }else{
-                const conn = await getConnection();
-                const check = await executeQuery(conn,`select*from user where username='${username}'`);
-                if(check.length>0){
-                    conn.release();
-                    res.status(400).send("Username sudah terpakai");
-                }else{
-                    const insert = await executeQuery(conn, `insert into user values('${username}','${password}','${name}','${phone_number}',0,'${filename}','', 1)`);
-                    const insertBookshelf = await executeQuery(conn, `insert into h_bookshelf values('${username}',0)`);
-                    conn.release();
-                    res.status(200).send("akun "+ username + " berhasil dibuat");
-                }
+                const insert = await executeQuery(conn, `insert into user values('${username}','${password}','${name}','${phone_number}',0,'${filename}','', 1)`);
+                const insertBookshelf = await executeQuery(conn, `insert into h_bookshelf values('${username}',0)`);
+                conn.release();
+                res.status(200).send("akun "+ username + " berhasil dibuat");
             }
         }
     });
